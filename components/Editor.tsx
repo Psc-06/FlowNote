@@ -7,6 +7,10 @@ import Placeholder from "@tiptap/extension-placeholder";
 import GenerateButton from "@/components/GenerateButton";
 
 type EditorProps = {
+  title: string;
+  content: string;
+  onTitleChange: (nextTitle: string) => void;
+  onContentChange: (nextContent: string) => void;
   onGenerate: (selectedText: string) => void;
   isGenerating: boolean;
 };
@@ -16,7 +20,14 @@ type FloatingPosition = {
   y: number;
 };
 
-export default function Editor({ onGenerate, isGenerating }: EditorProps) {
+export default function Editor({
+  title,
+  content,
+  onTitleChange,
+  onContentChange,
+  onGenerate,
+  isGenerating,
+}: EditorProps) {
   const [selectedText, setSelectedText] = useState("");
   const [floatingPosition, setFloatingPosition] = useState<FloatingPosition | null>(null);
 
@@ -28,8 +39,10 @@ export default function Editor({ onGenerate, isGenerating }: EditorProps) {
         placeholder: "Write notes here, select any process text, and generate a flowchart...",
       }),
     ],
-    content:
-      "<h2>Project Planning Notes</h2><p>If user has account login else register then go to dashboard.</p><p>Add your own notes and highlight text to visualize flow.</p>",
+    content,
+    onUpdate: ({ editor: currentEditor }) => {
+      onContentChange(currentEditor.getHTML());
+    },
     editorProps: {
       attributes: {
         class:
@@ -79,12 +92,30 @@ export default function Editor({ onGenerate, isGenerating }: EditorProps) {
     };
   }, [editor]);
 
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    const current = editor.getHTML();
+    if (current !== content) {
+      editor.commands.setContent(content, { emitUpdate: false });
+      setSelectedText("");
+      setFloatingPosition(null);
+    }
+  }, [content, editor]);
+
   const canGenerate = useMemo(() => Boolean(selectedText) && !isGenerating, [selectedText, isGenerating]);
 
   return (
     <div className="relative flex h-full flex-col rounded-2xl border border-slate-200 bg-slate-100/90 p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Editor</h2>
+        <input
+          value={title}
+          onChange={(event) => onTitleChange(event.target.value)}
+          className="w-2/3 rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-semibold text-slate-700 outline-none ring-indigo-100 transition focus:ring"
+          placeholder="Untitled Note"
+        />
         <p className="text-xs text-slate-500">Select text to generate a flowchart</p>
       </div>
 
